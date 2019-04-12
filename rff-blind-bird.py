@@ -66,6 +66,33 @@ timeline_log_t = [
 ]
 
 
+def logbuf_struct_assert(log_t):
+    for var in log_t:
+        assert "name" in var, "no varname found"
+        assert isinstance(var["name"], str), "varname is not a string"
+        assert "size" in var, "no size specified for variable"
+        assert var["size"] == 4, "variables with size != 4 aren't supported yet"
+        assert "used" in var, "no visability option specified for variable"
+        if var["used"]:
+            assert "fmt" in var or "enum-map" in var, \
+                "no format option specified for variable"
+        if "enum-map" in var:
+            if "args-interpr" in var:
+                logbuf_struct_assert(var["args-interpr"])
+            for key, value in (var["enum-map"]).items():
+                assert "name" in value, "no valuename found"
+                assert isinstance(value["name"], str), \
+                    "enum value name is not a string"
+                assert isinstance(key, int), "enum value is not a int"
+                if "args-interpr" in value:
+                    logbuf_struct_assert(value["args-interpr"])
+                    assert "args-interpr" in var, \
+                        "enum has args, but there is no default arg parser"
+                    assert logbuf_entry_size(value["args-interpr"]) == \
+                           logbuf_entry_size(var["args-interpr"]), \
+                           "enum default and custom args have different length"
+
+
 colorizer_function = colored
 split_tab = "; "
 
@@ -230,6 +257,8 @@ def main():
 
     if not split_tab:
         split_tab = "\t"
+
+    logbuf_struct_assert(timeline_log_t)
 
     with open(file_to_parse,'rb') as fi:
         if align_cut:
