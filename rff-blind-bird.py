@@ -128,13 +128,19 @@ def logbuf_entry_size(log_t):
     return entry_size
 
 
-def entry_var_to_string(var, value, fi):
+def entry_var_to_string(var, fi):
     enrty_header = color_header(var["name"] + ": ")
     enrty_interpretrd = ""
     subentry = ""
-    enrty_var = int.from_bytes(value, byteorder='little')
+
+    memory_value = fi.read(var["size"])
+    if not memory_value:
+        return ""
+
+    enrty_var = int.from_bytes(memory_value, byteorder='little')
     if not var["used"]:
         return ""
+
     # simple formater - int / hex / bin / octal
     if "fmt" in var:
         enrty_interpretrd += str(var["fmt"].format(enrty_var))
@@ -167,11 +173,7 @@ def process_entry(log_t, fi):
     last = len(log_t)
 
     for i, var in enumerate(log_t):
-        memory_value = fi.read(var["size"])
-        if not memory_value:
-            return ""
-
-        curr_entry = entry_var_to_string(var, memory_value, fi)
+        curr_entry = entry_var_to_string(var, fi)
         enrty_interpretrd += curr_entry
 
         # don't print the separator after the last enrty or if entry is unused (empty)
